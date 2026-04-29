@@ -1,4 +1,4 @@
-# Lead Capture Skills
+# Organic Growth Skills
 
 Free Claude Code skills for organic growth, GEO, and AI search visibility.
 
@@ -36,7 +36,7 @@ Key stats:
 
 ## Contributing
 
-Got a skill that helps with organic growth or lead capture? Open a PR.
+Got a skill that helps with organic growth? Open a PR.
 
 ## About
 
