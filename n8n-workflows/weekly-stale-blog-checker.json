@@ -1,0 +1,170 @@
+{
+  "name": "Weekly Stale Blog Checker → Slack DM",
+  "nodes": [
+    {
+      "id": "schedule-trigger",
+      "name": "Weekly Monday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": 1,
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "wordpress-get-posts",
+      "name": "Get All Blog Posts",
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [220, 0],
+      "parameters": {
+        "resource": "post",
+        "operation": "getAll",
+        "returnAll": true
+      },
+      "credentials": {
+        "wordpressApi": {
+          "id": "",
+          "name": "WordPress API"
+        }
+      }
+    },
+    {
+      "id": "filter-stale-posts",
+      "name": "Filter Stale Posts (6+ Months)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "parameters": {
+        "jsCode": "// Get all posts from the WordPress node\nconst posts = $input.all();\n\n// Calculate the date 6 months ago\nconst now = new Date();\nconst sixMonthsAgo = new Date(now);\nsixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);\n\n// Filter posts not modified in the last 6 months\nconst stalePosts = posts.filter(item => {\n  const modified = new Date(item.json.modified);\n  return modified < sixMonthsAgo;\n});\n\n// Sort by oldest first\nstalePosts.sort((a, b) => new Date(a.json.modified) - new Date(b.json.modified));\n\n// Build a summary for each stale post\nconst results = stalePosts.map(item => {\n  const modified = new Date(item.json.modified);\n  const daysSince = Math.floor((now - modified) / (1000 * 60 * 60 * 24));\n  return {\n    title: item.json.title?.rendered || item.json.title || 'Untitled',\n    url: item.json.link || '',\n    last_modified: modified.toISOString().split('T')[0],\n    days_since_update: daysSince,\n    post_id: item.json.id\n  };\n});\n\n// If no stale posts, return a flag so the IF node can stop the flow\nif (results.length === 0) {\n  return [{ json: { stale_count: 0, message: 'All blogs are up to date!' } }];\n}\n\n// Build the Slack message\nlet slackMessage = `🔴 *Stale Blog Alert* — ${results.length} blog(s) haven't been updated in 6+ months:\\n\\n`;\n\nresults.forEach((post, i) => {\n  slackMessage += `*${i + 1}. ${post.title}*\\n`;\n  slackMessage += `   Last modified: ${post.last_modified} (${post.days_since_update} days ago)\\n`;\n  slackMessage += `   ${post.url}\\n\\n`;\n});\n\nslackMessage += `_Run date: ${now.toISOString().split('T')[0]}_`;\n\nreturn [{ json: { stale_count: results.length, slack_message: slackMessage, stale_posts: results } }];"
+      }
+    },
+    {
+      "id": "if-stale-exists",
+      "name": "Any Stale Posts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "stale-check",
+              "leftValue": "={{ $json.stale_count }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "slack-dm",
+      "name": "Slack DM – Stale Blogs",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [880, -60],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "text": "={{ $json.slack_message }}",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "id": "no-action",
+      "name": "No Stale Posts – Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [880, 120],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Weekly Monday 9AM": {
+      "main": [
+        [
+          {
+            "node": "Get All Blog Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Blog Posts": {
+      "main": [
+        [
+          {
+            "node": "Filter Stale Posts (6+ Months)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Stale Posts (6+ Months)": {
+      "main": [
+        [
+          {
+            "node": "Any Stale Posts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Stale Posts?": {
+      "main": [
+        [
+          {
+            "node": "Slack DM – Stale Blogs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Stale Posts – Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

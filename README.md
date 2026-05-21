@@ -1,6 +1,6 @@
-# Organic Growth Skills
+# Organic Growth Skills & Workflows
 
-Free Claude Code skills for organic growth, GEO, and AI search visibility.
+Free Claude Code skills and n8n workflows for organic growth, GEO, and AI search visibility.
 
 Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman/) at [Didgeheads](https://didgeheads.com).
 
@@ -10,6 +10,12 @@ Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman/) at [Didgeh
 |---|---|
 | [GEO](skills/geo.md) | Optimise content for AI model citations (ChatGPT, Claude, Gemini, Perplexity, Google AI Overviews) |
 | [Content ROI Auditor](skills/content-roi-auditor.md) | Audit any blog post or article to determine if it has a commercial path to pipeline or is vanity content burning budget |
+
+## n8n Workflows
+
+| Workflow | What it does |
+|---|---|
+| [Weekly Stale Blog Checker](n8n-workflows/weekly-stale-blog-checker.json) | Audits your WordPress library every Monday and sends a Slack DM listing posts that haven't been updated in 6+ months. See [n8n-workflows/README.md](n8n-workflows/README.md) for install instructions. |
 
 ## How to use these skills in Claude Code
 
