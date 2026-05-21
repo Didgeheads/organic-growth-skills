@@ -10,6 +10,8 @@ Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman7/) at [Didge
 |---|---|
 | [GEO](skills/geo.md) | Optimise content for AI model citations (ChatGPT, Claude, Gemini, Perplexity, Google AI Overviews) |
 | [Content ROI Auditor](skills/content-roi-auditor.md) | Audit any blog post or article to determine if it has a commercial path to pipeline or is vanity content burning budget |
+| [ICP Research](skills/icp-research.md) | Produce a specific, list-buildable ICP by triangulating founder view, sales team's best deals, and competitive landscape. Outputs segments, personas, VoC themes, and intent signals |
+| [Competitor Research](skills/competitor-research.md) | Produce a single-competitor profile across 11 dimensions (positioning, pricing, GTM, content, hiring signals, threat tier) plus comparison angles vs your own company |
 
 ## n8n Workflows
 
