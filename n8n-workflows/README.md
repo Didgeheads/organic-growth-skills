@@ -2,7 +2,7 @@
 
 Free n8n workflows for organic growth, content operations, and GEO.
 
-Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman/) at [Didgeheads](https://didgeheads.com).
+Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman7/) at [Didgeheads](https://didgeheads.com).
 
 ## Workflows
 
