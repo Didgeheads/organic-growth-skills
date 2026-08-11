@@ -14,6 +14,12 @@ Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman7/) at [Didge
 | [Competitor Research](skills/competitor-research.md) | Produce a single-competitor profile across 11 dimensions (positioning, pricing, GTM, content, hiring signals, threat tier) plus comparison angles vs your own company |
 | [Asset Repurposer](skills/asset-repurposer.md) | Turn one source asset (talk, podcast, blog, deliverable) into a 2-3 week multi-channel release plan, with every output written through a different audience lens so you can post repeatedly without sounding repetitive |
 
+## Prompts
+
+| Prompt | What it does |
+|---|---|
+| [AI Search Query Tracking List Builder](prompts/ai-search-query-tracking-list.md) | Builds a 30-50 prompt tracking list of the conversational queries real buyers use in ChatGPT, Perplexity, Gemini, and Google AI Mode, sourced from your actual customer language instead of brainstormed keywords |
+
 ## n8n Workflows
 
 | Workflow | What it does |
