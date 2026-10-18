@@ -46,7 +46,7 @@ If WebFetch asks for permission on the client domain and times out, ask the user
 Read the titles and openings and group the articles into 3-5 content types by the job they do (e.g. coverage question, product explainer, policy process, how-to advice). Write `types.json` as `{"<slug>": "<type>"}`.
 
 ## Step 4. Computed metrics
-`python3 geo_recce.py metrics` writes `metrics.json` and `openers.json` (every H2/H3 with its first two sentences). Check the opener count looks right (roughly 6-12 per article).
+`python3 geo_recce.py metrics` writes `metrics.json` and `openers.json` (every H2/H3 with its first two sentences). Check the opener count looks right (roughly 6-12 per article). Sections that open with a table or a list aren't coded, because there's no opening sentence to judge; the script counts them in `openers_skipped.json`. Report that count in the method section.
 
 ## Step 5. Code every section opening, twice
 **Coder A (all openers).** One general-purpose subagent:
@@ -134,6 +134,7 @@ Writing rules: plain English, sentence case, numbers stated precisely ("38 of 10
 - Nothing internal or tool-related appears in the client-facing text.
 
 ## Gotchas
+- Very short first sentences ("Yes.", "It depends.") are kept as openers on purpose, because they are the deferrals R1 is built to catch. The sentence-length metric (R5) still ignores fragments under three words.
 - WebFetch passes pages through a small model; occasionally text is lightly altered. Spot-check one article against the live page.
 - Strip " - Brand" suffixes from page titles before charting, and disambiguate any duplicate titles.
 - Never run regex rounding over SVG text content; only round coordinate attributes (the script's SVG builder avoids this).
@@ -141,6 +142,9 @@ Writing rules: plain English, sentence case, numbers stated precisely ("38 of 10
 - Two articles sharing identical sections are each scored as published; note it in limitations.
 - Notion's find-and-replace can't match image or file blocks. To swap a chart on an existing report, fetch the page and rewrite it whole with `replace_content`, keeping every unchanged `notion-file-block://` reference exactly as fetched and using the new `file-upload://` sources for the replacements. Fetch again to confirm.
 - Notion's signed file links can't be downloaded from the workspace. To get a past study's CSV back, open the report page in the browser and read the file with a `fetch()` from that tab.
+
+## Changelog
+- October 2026 (script fixes, scores comparable with v2 weights): short openers such as "Yes." were being dropped so sentence 2 was coded instead; dates written with "September" failed to parse and scored 0 for freshness; articles updated in the last few days were counted as over 12 months old in the headline counts; sections opening with a table had the footnote under the table coded as the opener. Thanks to an external tester who ran the skill on 32 German guides. Rescore any study run before this date from its raw files, since the first two fixes can change opener codes and freshness scores.
 
 ## Appendix: geo_recce.py
 Write this to the working folder verbatim before Step 4. It needs Python 3 with numpy and scipy.
@@ -183,7 +187,8 @@ HEDGE = re.compile(r"\b(may|might|could)\b", re.I)
 def sentences(text):
     text = re.sub(r"\s+", " ", text).strip()
     parts = re.split(r"(?<=[.!?])\s+(?=[A-Z“\"'(£$€0-9])", text)
-    return [p for p in parts if len(p.split()) >= 3]
+    # Keep every non-empty sentence. Short ones ("Yes.", "It depends.") are often the deferral R1 must catch.
+    return [p for p in parts if p.split()]
 
 
 def parse(path):
@@ -232,7 +237,7 @@ def blocks(lines):
 def months_since(d):
     if not d or d.lower() == "none":
         return None
-    d = d.replace("Sept", "Sep").strip()
+    d = re.sub(r"\bSept\b", "Sep", d).strip()
     for fmt in ("%d %b %Y", "%d %B %Y", "%Y-%m-%d", "%B %d, %Y", "%b %d, %Y", "%d/%m/%Y"):
         try:
             x = datetime.strptime(d, fmt).date()
@@ -246,6 +251,7 @@ def months_since(d):
 def cmd_metrics():
     types = json.load(open("types.json")) if os.path.exists("types.json") else {}
     rows, openers, oid = [], [], 0
+    led_by = collections.Counter()
     for path in sorted(glob.glob(f"{RAW}/*.md")):
         slug = os.path.basename(path)[:-3]
         meta, lines = parse(path)
@@ -256,7 +262,7 @@ def cmd_metrics():
         prose = [b[1] for b in bl if b[0] == "p"]
         items = [b[1] for b in bl if b[0] == "li"]
         sents = [s for p in prose for s in sentences(p)]
-        slen = [len(s.split()) for s in sents]
+        slen = [len(s.split()) for s in sents if len(s.split()) >= 3]  # sentence-length metric ignores fragments
         list_blocks, prev = 0, None
         for b in bl:
             if b[0] == "li" and prev != "li":
@@ -267,7 +273,9 @@ def cmd_metrics():
         words = len(text.split())
         for i, b in enumerate(bl):
             if b[0] == "h" and b[1][0] in (2, 3) and not SKIP_HEADINGS.search(b[1][1]):
-                nxt = next((x for x in bl[i + 1:] if x[0] in ("p", "li", "h")), None)
+                nxt = next((x for x in bl[i + 1:] if x[0] in ("p", "li", "tr", "h")), None)
+                if nxt and nxt[0] in ("li", "tr"):
+                    led_by["list" if nxt[0] == "li" else "table"] += 1  # not coded; reported separately
                 if nxt and nxt[0] == "p":
                     ss = sentences(nxt[1]) or [nxt[1]]
                     oid += 1
@@ -288,7 +296,9 @@ def cmd_metrics():
         })
     json.dump(rows, open("metrics.json", "w"), indent=1, ensure_ascii=False)
     json.dump(openers, open("openers.json", "w"), indent=1, ensure_ascii=False)
-    print(f"{len(rows)} articles, {len(openers)} section openers")
+    json.dump(dict(led_by), open("openers_skipped.json", "w"))
+    print(f"{len(rows)} articles, {len(openers)} section openers "
+          f"({led_by['table']} sections open with a table and {led_by['list']} with a list; not coded)")
     unassigned = [r["slug"] for r in rows if r["type"] == "Unassigned"]
     if unassigned:
         print("WARNING: no content type for", unassigned)
@@ -507,8 +517,8 @@ def cmd_score():
                         "articles_no_source": sum(r["source_mentions"] == 0 for r in R),
                         "articles_with_author": sum(r["author_shown"] for r in R),
                         "articles_with_expert_quote": sum(r["expert_quotes"] > 0 for r in R),
-                        "articles_over_12_months": sum((r["months_since_update"] or 99) > 12 for r in R),
-                        "articles_within_3_months": sum((r["months_since_update"] or 99) <= 3 for r in R),
+                        "articles_over_12_months": sum(r["months_since_update"] is not None and r["months_since_update"] > 12 for r in R),
+                        "articles_within_3_months": sum(r["months_since_update"] is not None and r["months_since_update"] <= 3 for r in R),
                         "articles_no_date": sum(r["months_since_update"] is None for r in R)}
     # content types
     types = sorted({r["type"] for r in R})
