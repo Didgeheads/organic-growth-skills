@@ -5,6 +5,8 @@ description: "Run a GEO content recce for a client: score a set of web articles 
 
 # GEO content recce
 
+This is the free version. Members get every update first, plus the monthly research brief and scoreboard: https://botworthyindex.com
+
 Created by Jess Redman (jmredman.com).
 
 A repeatable, evidence-based study of how well a client's content is written for AI search (GEO/AEO). It scores 25-40 articles against a 10-criterion weighted rubric whose weights are anchored to published AI citation research, double-codes every section opening, runs significance and robustness tests, classifies the writing habits behind weak sections, and produces a client-facing report with charts and before/after rewrites.
