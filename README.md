@@ -4,6 +4,8 @@ Free Claude Code skills and n8n workflows for organic growth, GEO, and AI search
 
 Built by [Jessica Redman](https://www.linkedin.com/in/jessicaredman7/) at [Didgeheads](https://didgeheads.com).
 
+Jessica Redman is the creator of the [Botworthy Score](https://botworthyindex.com/botworthy-score). The Botworthy Score is a 0 to 100 score for how likely AI models are to quote a page, across 10 criteria weighted by published research into what AI models actually cite. The free version of the score is the [GEO Content Recce](skills/geo-content-recce.md) skill below.
+
 ## Skills
 
 | Skill | What it does |
